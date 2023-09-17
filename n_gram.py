@@ -40,10 +40,11 @@ def count_n_gram(corpus, n):
 
 
 
-def train_n_gram(corpus, n, vocab = 0, smoothing = False):
+def train_n_gram(corpus, n, vocab = 0, smoothing = False, how='Laplace', k=1):
     prob_n_words = {}
     ngram_counts = count_n_gram(corpus, n)
-
+    if(how=='Laplace'):
+        k=1
     if(n > 1):
         n1gram_counts = count_n_gram(corpus, n-1)
         unigram_counts = count_n_gram(corpus, 1)
@@ -60,12 +61,12 @@ def train_n_gram(corpus, n, vocab = 0, smoothing = False):
                 if(smoothing == False):
                     prob_n_words[key] = ngram_counts[key] / n1gram_counts[prev]
                 else:
-                    prob_n_words[key] = (ngram_counts[key] + 1) / (n1gram_counts[prev] + vocab)
+                    prob_n_words[key] = (ngram_counts[key] + k) / (n1gram_counts[prev] + k*vocab)
             elif (n >2):
                 if(smoothing == False):
                     prob_n_words[key] = ngram_counts[key] / unigram_counts[words[n-2]]
                 else:
-                    prob_n_words[key] = (ngram_counts[key] + 1) / (unigram_counts[words[n-2]] + vocab)
+                    prob_n_words[key] = (ngram_counts[key] + k) / (unigram_counts[words[n-2]] + k*vocab)
             else:
                 if(smoothing == False):
                     prob_n_words[key] = 0
@@ -80,11 +81,13 @@ def train_n_gram(corpus, n, vocab = 0, smoothing = False):
             if(smoothing == False):
                 prob_n_words[key] = ngram_counts[key] / N_train
             else:
-                prob_n_words[key] = (ngram_counts[key] + 1) / (N_train + vocab)
+                prob_n_words[key] = (ngram_counts[key] + k) / (N_train + k*vocab)
     return prob_n_words
 
-def test_n_gram(test_data, n, prob_words, epsilon=1e-15, Vocabulary=0,smoothing=False,processed_corpus=None):
+def test_n_gram(test_data, n, prob_words, epsilon=1e-15, Vocabulary=0,smoothing=False,how='Laplace',k=1,processed_corpus=None):
     perplexity={}
+    if(how=='Laplace'):
+        k=1
     if(smoothing==False):
         for id in test_data:
             if(n==1):
@@ -137,9 +140,9 @@ def test_n_gram(test_data, n, prob_words, epsilon=1e-15, Vocabulary=0,smoothing=
                     log_p += log(prob_words[str])
                 else:
                     if(prev in n1gram_counts):
-                        log_p += log(1/n1gram_counts[prev]+Vocabulary)
+                        log_p += log(k/n1gram_counts[prev]+k*Vocabulary)
                     elif(n>1 and tokens[i+n-2]=="<s>"):
-                        log_p += log(1/unigram_counts["<s>"]+Vocabulary)
+                        log_p += log(k/unigram_counts["<s>"]+k*Vocabulary)
                     else:
                         log_p += log(1/Vocabulary)
             log_p=(-log_p)/data_len
