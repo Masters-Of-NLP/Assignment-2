@@ -1,3 +1,16 @@
+def vocabulary(train_corpus, test_corpus):
+    vocab = set()
+    
+    for id in train_corpus:
+        for token in train_corpus[id]:
+            vocab.add(token) 
+    
+    for id in test_corpus:
+        for token in test_corpus[id]:
+            vocab.add(token)
+        
+    return vocab
+
 def count_n_gram(corpus, n):
     
     ngram_counts = {}
@@ -23,7 +36,7 @@ def count_n_gram(corpus, n):
 
 
 
-def train_n_gram(corpus, n):
+def train_n_gram(corpus, n, vocab = 0, smoothing = False):
     prob_n_words = {}
     ngram_counts = count_n_gram(corpus, n)
 
@@ -40,16 +53,28 @@ def train_n_gram(corpus, n):
                 prev += words[j] 
             
             if (prev in n1gram_counts):
-                prob_n_words[key] = ngram_counts[key] / n1gram_counts[prev]
+                if(smoothing == False):
+                    prob_n_words[key] = ngram_counts[key] / n1gram_counts[prev]
+                else:
+                    prob_n_words[key] = (ngram_counts[key] + 1) / (n1gram_counts[prev] + vocab)
             elif (n >2):
-                prob_n_words[key] = ngram_counts[key] / unigram_counts[words[n-2]]
+                if(smoothing == False):
+                    prob_n_words[key] = ngram_counts[key] / unigram_counts[words[n-2]]
+                else:
+                    prob_n_words[key] = (ngram_counts[key] + 1) / (unigram_counts[words[n-2]] + vocab)
             else:
-                prob_n_words[key] = 0
+                if(smoothing == False):
+                    prob_n_words[key] = 0
+                else:
+                    prob_n_words[key] = 1/vocab
     else:
         N_train = 0
         for key in ngram_counts:
             N_train += ngram_counts[key]
 
         for key in ngram_counts:
-            prob_n_words[key] = ngram_counts[key] / N_train
+            if(smoothing == False):
+                prob_n_words[key] = ngram_counts[key] / N_train
+            else:
+                prob_n_words[key] = (ngram_counts[key] + 1) / (N_train + vocab)
     return prob_n_words
