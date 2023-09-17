@@ -8,7 +8,8 @@ def vocabulary(train_corpus, test_corpus):
     for id in test_corpus:
         for token in test_corpus[id]:
             vocab.add(token)
-        
+    vocab.add("<s>")
+    vocab.add("</s>")
     return vocab
 
 def count_n_gram(corpus, n):
