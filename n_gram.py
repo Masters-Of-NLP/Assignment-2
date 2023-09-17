@@ -41,6 +41,11 @@ def count_n_gram(corpus, n):
 
 
 def train_n_gram(corpus, n, vocab = 0, smoothing = False, how='Laplace', k=1):
+    """
+    how: Types of smoothing = {'Laplace','Add_k','Good Turing'}
+
+    - Must specify k with how='Add_k' or it will implement Laplace smoothing
+    """
     prob_n_words = {}
     ngram_counts = count_n_gram(corpus, n)
     if(how=='Laplace'):
@@ -85,6 +90,11 @@ def train_n_gram(corpus, n, vocab = 0, smoothing = False, how='Laplace', k=1):
     return prob_n_words
 
 def test_n_gram(test_data, n, prob_words, epsilon=1e-15, Vocabulary=0,smoothing=False,how='Laplace',k=1,processed_corpus=None):
+    """
+    how: Types of smoothing = {'Laplace','Add_k','Good Turing'}
+
+    - Must specify k with how='Add_k' or it will implement Laplace smoothing
+    """
     perplexity={}
     if(how=='Laplace'):
         k=1
