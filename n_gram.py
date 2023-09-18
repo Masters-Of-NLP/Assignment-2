@@ -150,9 +150,9 @@ def test_n_gram(test_data, n, prob_words, epsilon=1e-15, Vocabulary=0,smoothing=
                     log_p += log(prob_words[str])
                 else:
                     if(prev in n1gram_counts):
-                        log_p += log(k/n1gram_counts[prev]+k*Vocabulary)
+                        log_p += log(k/(n1gram_counts[prev]+k*Vocabulary))
                     elif(n>1 and tokens[i+n-2]=="<s>"):
-                        log_p += log(k/unigram_counts["<s>"]+k*Vocabulary)
+                        log_p += log(k/(unigram_counts["<s>"]+k*Vocabulary))
                     else:
                         log_p += log(1/Vocabulary)
             log_p=(-log_p)/data_len
