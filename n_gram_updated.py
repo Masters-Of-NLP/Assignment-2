@@ -1,22 +1,27 @@
 from math import log,exp
 import numpy as np
 
-def vocabulary(corpus):
+# Defining vocabulary on the the whole corpus
+def vocabulary(train_corpus, test_corpus):
     vocab = set()
     
-    for id in corpus:
-        for token in corpus[id]:
+    for id in train_corpus:
+        for token in train_corpus[id]:
             vocab.add(token) 
-
+    
+    for id in test_corpus:
+        for token in test_corpus[id]:
+            vocab.add(token)
     vocab.add("<s>")
     vocab.add("</s>")
     return vocab
 
+# Function for counting the occurence of n-grams in the training corpus
 def count_n_gram(corpus, n):
     
     ngram_counts = {}
     for id in corpus:
-        if (n == 1):
+        if (n == 1):                                # Start & end of sentence added with each sentence single for unigram/bigram and multiple times for tri/quadgram
             tokens = ["<s>"]
             tokens += corpus[id] + ["</s>"]
         else:
@@ -32,8 +37,8 @@ def count_n_gram(corpus, n):
                 str += tokens[i + j] 
             if(str not in ngram_counts):
                 ngram_counts[str] = 0
-            ngram_counts[str] += 1
-    return ngram_counts
+            ngram_counts[str] += 1                   # returns a dictionary where the key is word precceded by its context n-1 words, and value is the occurences of these n-grams in the corpus
+    return ngram_counts                             
 
 def Nc(count_dict):
     Nc_ = [0]*(max(list(count_dict.values()))+1)
@@ -56,6 +61,7 @@ def new_count(Nc, c):
     c_star = ((c+1)*Nc[c])/(Nc[c-1])
     return c_star
 
+# Function for training the n-gram model with/or without smoothing
 def train_n_gram(corpus, n, vocab = 0, smoothing = False, how='Laplace', k=1):
     """
     how: Types of smoothing = {'Laplace','Add_k','Good Turing'}
@@ -91,12 +97,12 @@ def train_n_gram(corpus, n, vocab = 0, smoothing = False, how='Laplace', k=1):
                         prev += ' '
                     prev += words[j] 
                 
-                if (prev in n1gram_counts):
+                if (prev in n1gram_counts):                     # If the context exists in the prev n-gram model take its count
                     if(smoothing == False):
                         prob_n_words[key] = ngram_counts[key] / n1gram_counts[prev]
                     else:
                         prob_n_words[key] = (ngram_counts[key] + k) / (n1gram_counts[prev] + k*vocab)
-                elif (n >2):
+                elif (n >2):                                    # For the tag <s> we will have to take the unigram counts as the first context for each biagram will consist only of <s> tags
                     if(smoothing == False):
                         prob_n_words[key] = ngram_counts[key] / unigram_counts[words[n-2]]
                     else:
@@ -105,10 +111,10 @@ def train_n_gram(corpus, n, vocab = 0, smoothing = False, how='Laplace', k=1):
                     if(smoothing == False):
                         prob_n_words[key] = 0
                     else:
-                        prob_n_words[key] = 1/vocab
+                        prob_n_words[key] = 1/vocab             # if the context doesn't occur in the n-1 gram data somehow assignthe smooth probability
         else:
             N_train = 0
-            for key in ngram_counts:
+            for key in ngram_counts:                            # Especially for the unigram model
                 N_train += ngram_counts[key]
 
             for key in ngram_counts:
@@ -116,8 +122,10 @@ def train_n_gram(corpus, n, vocab = 0, smoothing = False, how='Laplace', k=1):
                     prob_n_words[key] = ngram_counts[key] / N_train
                 else:
                     prob_n_words[key] = (ngram_counts[key] + k) / (N_train + k*vocab)
-    return prob_n_words
 
+    return prob_n_words                 # returns a dictionary where the key is the n-1 context words followed by the next word, and value is the probability assigned to them (with/without smoothing)
+
+# Function for testing the n-gram model with/or without smoothing
 def test_n_gram(test_data, n, prob_words, epsilon=1e-15, Vocabulary=0,smoothing=False,how='Laplace',k=1,processed_corpus=None):
     """
     how: Types of smoothing = {'Laplace','Add_k','Good Turing'}
@@ -154,7 +162,7 @@ def test_n_gram(test_data, n, prob_words, epsilon=1e-15, Vocabulary=0,smoothing=
     else:
         if(how=='Laplace'):
             k=1
-        if(smoothing==False):
+        if(smoothing==False):                                   # Assigning the probabilities to the test n-grams based on the trained model
             for id in test_data:
                 if(n==1):
                     tokens=["<s>"]
@@ -175,11 +183,11 @@ def test_n_gram(test_data, n, prob_words, epsilon=1e-15, Vocabulary=0,smoothing=
                     if str in prob_words:
                         log_p += log(prob_words[str])
                     else:
-                        log_p += log(epsilon)
+                        log_p += log(epsilon)                   # If the context is not already present in the corpus assign a small prob
                 log_p=(-log_p)/data_len
                 perplexity[id]=exp(log_p)
             
-            avg_perplexity=np.mean(list(perplexity.values()))
+            avg_perplexity=np.mean(list(perplexity.values()))   # Average out the perplexity
 
         else:
             n1gram_counts=count_n_gram(processed_corpus,n-1)
@@ -206,7 +214,7 @@ def test_n_gram(test_data, n, prob_words, epsilon=1e-15, Vocabulary=0,smoothing=
                         log_p += log(prob_words[str])
                     else:
                         if(prev in n1gram_counts):
-                            log_p += log(k/(n1gram_counts[prev]+k*Vocabulary))
+                            log_p += log(k/(n1gram_counts[prev]+k*Vocabulary))              # Smoothing while assigning the test probabilities
                         elif(n>1 and tokens[i+n-2]=="<s>"):
                             log_p += log(k/(unigram_counts["<s>"]+k*Vocabulary))
                         else:
@@ -215,4 +223,4 @@ def test_n_gram(test_data, n, prob_words, epsilon=1e-15, Vocabulary=0,smoothing=
                 perplexity[id]=exp(log_p)
             avg_perplexity=np.mean(list(perplexity.values()))
 
-    return perplexity,avg_perplexity
+    return perplexity,avg_perplexity           # reutrns a dictionary where key: sentence ID, value: perplextiy of model for that sentence, and average perplexity for the model
